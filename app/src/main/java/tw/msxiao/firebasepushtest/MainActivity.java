@@ -9,8 +9,10 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.Toast;
 
+import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -18,6 +20,7 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 import com.google.firebase.messaging.FirebaseMessaging;
+import io.fabric.sdk.android.Fabric;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -26,7 +29,22 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Fabric.with(this, new Crashlytics());
         setContentView(R.layout.activity_main);
+
+        // Log the onCreate event, this will also be printed in logcat
+        Crashlytics.log(Log.VERBOSE, TAG, "onCreate");
+
+        // Add some custom values and identifiers to be included in crash reports
+        Crashlytics.setInt("MeaningOfLife", 42);
+        Crashlytics.setString("LastUIAction", "Test value");
+        Crashlytics.setUserIdentifier("123456789");
+
+        // Report a non-fatal exception, for demonstration purposes
+        Crashlytics.logException(new Exception("Non-fatal exception: something went wrong!"));
+
+        // Checkbox to indicate when to catch the thrown exception.
+        final CheckBox catchCrashCheckBox = findViewById(R.id.catchCrashCheckBox);
 
         FirebaseApp.initializeApp(this);
 
@@ -98,26 +116,39 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-//                FirebaseInstanceId.getInstance().getInstanceId()
-//                        .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
-//                            @Override
-//                            public void onComplete(@NonNull Task<InstanceIdResult> task) {
-//                                if (!task.isSuccessful()) {
-//                                    Log.w(TAG, "getInstanceId failed", task.getException());
-//                                    return;
-//                                }
-//
-//                                // Get new Instance ID token
-//                                String token = task.getResult().getToken();
-//
-//                                // Log and toast
-//                                String msg = getString(R.string.msg_token_fmt, token);
-//                                Log.d(TAG, msg);
-//                                Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
-//                            }
-//                        });
+
 
             }
         });
+
+        Button crashButton = findViewById(R.id.crashButton);
+        crashButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Log that crash button was clicked.
+                Crashlytics.log(Log.INFO, TAG, "Crash button clicked.");
+
+                // If catchCrashCheckBox is checked catch the exception and report is using
+                // logException(), Otherwise throw the exception and let Crashlytics automatically
+                // report the crash.
+                if (catchCrashCheckBox.isChecked()) {
+                    try {
+                        throw new NullPointerException();
+                    } catch (NullPointerException ex) {
+                        // [START crashlytics_log_and_report]
+                        Crashlytics.log(Log.ERROR, TAG, "NPE caught!");
+                        Crashlytics.logException(ex);
+                        // [END crashlytics_log_and_report]
+                    }
+                } else {
+                    throw new NullPointerException();
+                }
+            }
+        });
+
+        // Log that the Activity was created.
+        // [START crashlytics_log_event]
+        Crashlytics.log("Activity created");
+        // [END crashlytics_log_event]
     }
 }

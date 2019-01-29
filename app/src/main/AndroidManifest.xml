@@ -45,6 +45,10 @@
                 <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE" />
             </intent-filter>
         </service>
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="3d653abfd2fb9dc997ac272f1db2cf6c86593d15" />
     </application>
 
+    <uses-permission android:name="android.permission.INTERNET" />
 </manifest>
